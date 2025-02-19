@@ -1,0 +1,31 @@
+Structure du dossier pour le volume Windows
+Le numÚro de sÚrie du volume est B7C3-FD10
+ª   create_db.py
+ª   data.json
+ª   run - Copie.py
+ª   run.py
+ª   structure.txt
+ª   
++---app
+ª   ª   routes.py
+ª   ª   utils.py
+ª   ª   __init__.py
+ª   ª   
+ª   +---static
+ª   ª       Background.jpg
+ª   ª       remarks.css
+ª   ª       style.css
+ª   ª       
+ª   +---templates
+ª   ª       remarks.html
+ª   ª       students.html
+ª   ª       
+ª   +---__pycache__
+ª           models.cpython-313.pyc
+ª           routes.cpython-313.pyc
+ª           utils.cpython-313.pyc
+ª           __init__.cpython-313.pyc
+ª           
++---instance
+        students_sessions.db
+        

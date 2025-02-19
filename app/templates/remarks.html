@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remarques</title>
+    <link rel="stylesheet" href="../static/remarks.css">
+    <script>
+        function saveSelection(studentId) {
+            const checkboxes = document.querySelectorAll('input[name="selected_sessions"]:checked');
+            const formData = new FormData();
+            checkboxes.forEach(checkbox => {
+                formData.append('selected_sessions', checkbox.value);
+            });
+            fetch(`/save_selection/${studentId}`, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert("❌ Une erreur s'est produite lors de la sauvegarde.");
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert("❌ Une erreur s'est produite lors de la sauvegarde.");
+            });
+        }
+
+        function toggleInfoForm() {
+            const form = document.getElementById('info-form');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function toggleEditRemarkForm(sessionId) {
+            const form = document.getElementById('edit-form-' + sessionId);
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+        }
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            font-size: 14px;
+        }
+        .non-enregistree {
+            color: red;
+            font-weight: bold;
+        }
+        .remark-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px;">
+        <h1>🗒️ Séances de l'élève : {{ student_name }}</h1>
+        <a href="{{ url_for('app_routes.students') }}">
+            <button type="button" style="background-color: #2196F3; color: white;">🔙 Retour</button>
+        </a>
+        <button onclick="toggleInfoForm()">ℹ️ Informations</button>
+        <form id="info-form" style="display:none;" action="{{ url_for('app_routes.update_info', student_id=student_id) }}" method="POST">
+            <input type="text" name="school_name" placeholder="🏫 Nom de l'école" value="{{ student_school }}">
+            <input type="date" name="birth_date" value="{{ student_birth_date }}">
+            <input type="tel" name="phone_number" placeholder="📞 Numéro de téléphone" value="{{ student_phone_number }}">
+            <button type="submit">💾 Enregistrer</button>
+        </form>
+        <a href="https://wa.me/{{ '212' + student_phone_number[1:] if student_phone_number.startswith('06') else student_phone_number }}" target="_blank">
+            <button style="background-color: #25D366; color: white;">💬 WhatsApp</button>
+        </a>
+        <form action="{{ url_for('app_routes.delete_student', student_id=student_id) }}" method="POST">
+            <button type="submit" style="background-color: red; color: white;">🗑️ Supprimer l'élève</button>
+        </form>
+    </div>
+
+    <!-- FORMULAIRE POUR AJOUTER UNE REMARQUE -->
+    <div style="text-align: center; margin-top: 20px;">
+        <form action="{{ url_for('app_routes.remarks', student_id=student_id) }}" method="POST">
+            <textarea name="remark" placeholder="✏️ Saisir une remarque" style="width: 80%; height: 100px;" required></textarea>
+            <br><br>
+            <button type="submit" style="background-color: #4CAF50; color: white;">➕ Ajouter la séance</button>
+        </form>
+    </div>
+
+    <!-- LISTE DES REMARQUES -->
+    <h2 style="text-align: center; margin-top: 30px;">🗂️ Séances enregistrées :</h2>
+    <ul>
+        {% for session in sessions %}
+        <li class="remark-container">
+            <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                <p><strong>📅 Date :</strong> {{ session.date }}</p>
+                <p>
+                    <strong>📝 Contenu :</strong> {{ session.remark }}
+                    {% if session.id in unrecorded_sessions %}
+                        <span class="non-enregistree">⚠️ (Non enregistrée)</span>
+                    {% endif %}
+                </p>
+                <input type="checkbox" name="selected_sessions" value="{{ session.id }}" 
+                {% if session.id in selected_sessions %}checked{% endif %}>
+                <button type="button" onclick="toggleEditRemarkForm({{ session.id }})" style="background-color: #FFC107; color: white;">✏️ Modifier</button>
+                <form id="edit-form-{{ session.id }}" action="{{ url_for('app_routes.edit_remark', student_id=student_id, session_id=session.id) }}" method="POST" style="display: none;">
+                    <textarea name="remark" placeholder="✏️ Modifier la remarque">{{ session.remark }}</textarea>
+                    <br>
+                    <button type="submit" style="background-color: #4CAF50; color: white;">💾 Sauvegarder</button>
+                </form>
+                <form action="{{ url_for('app_routes.delete_remark', student_id=student_id, session_id=session.id) }}" method="POST">
+                    <button type="submit" style="background-color: #f44336; color: white;">🗑️ Supprimer</button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <!-- BOUTON POUR ENREGISTRER LES SELECTIONS -->
+    <div style="text-align: center; margin-top: 20px;">
+        <button type="button" onclick="saveSelection({{ student_id }})" style="background-color: #FF9800; color: white;">💾 Sauvegarder la sélection</button>
+    </div>
+
+    <!-- AFFICHAGE DU COMPTEUR DE SEANCES NON PAYÉES -->
+    <div style="text-align: center; margin-top: 20px;">
+        <p style="font-size: 16px; color: red;">
+            <strong>⚠️ Nombre des séances non payées : {{ unrecorded_count }}</strong>
+        </p>
+    </div>
+
+    <!-- RETOUR À LA PAGE DES ÉLÈVES -->
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="{{ url_for('app_routes.students') }}">
+            <button type="button" style="background-color: #2196F3; color: white;">🏡 Retour à la page des élèves</button>
+        </a>
+    </div>
+</body>
+</html>
